@@ -1,0 +1,21 @@
+# IDE files
+.idea/
+.vscode/
+
+# Docker files
+Dockerfile*
+compose.yaml
+taskfile.yaml
+
+# Environment files
+.env
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
+
+# Dev container directory
+.devcontainer/
+
+# Content directory
+content/

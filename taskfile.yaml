@@ -1,0 +1,25 @@
+version: '3'
+
+env:
+  NAME: blog_support
+  REGISTRY: cr.quud.net
+
+tasks:
+  build_dev:
+    cmds:
+      - | 
+        docker buildx build \
+          --file Dockerfile.dev \
+          --platform linux/arm64 \
+          --build-arg arch=arm64 --build-arg proxy=1 \
+          --push -t ${REGISTRY}/${NAME}_dev:latest .
+    silent: true
+  build:
+    cmds:
+      - | 
+        docker buildx build \
+          --file Dockerfile \
+          --platform linux/arm64 \
+          --build-arg arch=arm64 --build-arg proxy=1 \
+          --push -t ${REGISTRY}/${NAME}:latest .
+    silent: true

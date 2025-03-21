@@ -1,29 +1,38 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
+	"log"
 
-	"github.com/shibu1x/blog_support/pkg"
+	"github.com/joho/godotenv"
+	"github.com/shibu1x/blog_support/model"
 )
 
+func init() {
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Error loading .env file: %v", err)
+	}
+	model.LoadEnv()
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: main.go <date>")
+	dateStr := flag.String("d", "", "Date in format MM/DD or YYYY/MM/DD")
+	number := flag.Int("n", 0, "Number")
+	publish := flag.Bool("p", false, "Publish")
+	year := flag.Int("y", 0, "Year in format YYYY")
+	flag.Parse()
+
+	if *publish {
+		model.Publish(*year)
 		return
 	}
 
-	postModel, err := pkg.NewPostModel(os.Args[1])
+	post, err := model.NewPost(*dateStr, *number)
 	if err != nil {
 		fmt.Printf("Error creating PostModel: %v\n", err)
 		return
 	}
 
-	// Create directory based on the date
-	err = postModel.CreateDirectory()
-	if err != nil {
-		fmt.Printf("Error creating directory: %v\n", err)
-		return
-	}
-	fmt.Printf("Directory created successfully for date: %s\n", os.Args[1])
+	post.Create()
 }

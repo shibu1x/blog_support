@@ -1,0 +1,18 @@
+{
+    "dockerComposeFile": "../compose.yaml",
+    "service": "app_dev",
+    "workspaceFolder": "/app",
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"GitHub.copilot",
+				"GitHub.copilot-chat"
+			]
+		}
+	},
+	"postCreateCommand": "go mod tidy"
+}
