@@ -1,0 +1,9 @@
+FROM golang:latest
+
+WORKDIR /app
+
+ARG proxy
+RUN if [[ -z "$proxy" ]] ; then echo 'Acquire::http { Proxy "http://home1.quud.net:3142"; };' >> /etc/apt/apt.conf.d/01proxy ; fi
+
+RUN apt update \
+    && apt install -y imagemagick

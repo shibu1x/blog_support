@@ -1,0 +1,11 @@
+services:
+  app_dev:
+    image: cr.quud.net/blog_support_dev:latest
+    # build:
+    #   dockerfile: Dockerfile.dev
+    #   args:
+    #     proxy: 1
+    tty: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/app:delegated
