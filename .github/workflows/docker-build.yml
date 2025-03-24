@@ -1,8 +1,8 @@
+name: Docker Build
+
 permissions:
   contents: read
   packages: write
-
-name: Docker Build
 
 on:
   push:
