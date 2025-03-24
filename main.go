@@ -24,15 +24,15 @@ func main() {
 	flag.Parse()
 
 	if *publish {
-		model.Publish(*year)
+		model.PublishYearPosts(*year)
 		return
 	}
 
-	post, err := model.NewPost(*dateStr, *number)
+	post, err := model.CreateNewPost(*dateStr, *number)
 	if err != nil {
 		fmt.Printf("Error creating PostModel: %v\n", err)
 		return
 	}
 
-	post.Create()
+	post.CreatePost()
 }

@@ -46,7 +46,7 @@ type Post struct {
 	dirPath string
 }
 
-func NewPost(dateStr string, number int) (Post, error) {
+func CreateNewPost(dateStr string, number int) (Post, error) {
 	var date time.Time
 	var err error
 	date, err = dateparse.ParseAny(dateStr)
@@ -140,7 +140,7 @@ func (p Post) resizeImages() error {
 		".png":  true,
 	}
 
-	var destNames []string
+	var imgFileNames []string
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -152,24 +152,24 @@ func (p Post) resizeImages() error {
 			continue
 		}
 
-		destName := file.Name()
-		if strings.HasPrefix(destName, "IMG_") {
-			destName = strings.Replace(destName, "IMG_", "i", 1)
+		imgFileName := file.Name()
+		if strings.HasPrefix(imgFileName, "IMG_") {
+			imgFileName = strings.Replace(imgFileName, "IMG_", "i", 1)
 		}
 		if ext != ".png" {
-			destName = destName[:len(destName)-len(ext)] + ".jpg"
+			imgFileName = imgFileName[:len(imgFileName)-len(ext)] + ".jpg"
 		}
 
-		destName = strings.ToLower(destName)
+		imgFileName = strings.ToLower(imgFileName)
 		srcPath := filepath.Join(imgSrcDir, file.Name())
-		destPath := filepath.Join(imgDir, destName)
+		destPath := filepath.Join(imgDir, imgFileName)
 		cmd := exec.Command("convert", srcPath, "-resize", "1024x1024", destPath)
 		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("error resizing image: %v", err)
 		}
 
-		destNames = append(destNames, destName)
+		imgFileNames = append(imgFileNames, imgFileName)
 
 		err = os.Remove(srcPath)
 		if err != nil {
@@ -177,7 +177,7 @@ func (p Post) resizeImages() error {
 		}
 	}
 
-	err = p.writeDestNamesToIndex(destNames)
+	err = p.writeImageNamesToIndex(imgFileNames)
 	if err != nil {
 		return fmt.Errorf("error writing dest names to index.md: %v", err)
 	}
@@ -185,8 +185,8 @@ func (p Post) resizeImages() error {
 	return nil
 }
 
-func (p Post) writeDestNamesToIndex(destNames []string) error {
-	if len(destNames) == 0 {
+func (p Post) writeImageNamesToIndex(imgFileNames []string) error {
+	if len(imgFileNames) == 0 {
 		return nil
 	}
 
@@ -197,7 +197,7 @@ func (p Post) writeDestNamesToIndex(destNames []string) error {
 	}
 	defer file.Close()
 
-	for _, name := range destNames {
+	for _, name := range imgFileNames {
 		_, err := file.WriteString(fmt.Sprintf("![](img/%s)\n\n", name))
 
 		if err != nil {
@@ -341,7 +341,7 @@ func (p Post) replaceImageLinks() error {
 	return nil
 }
 
-func (p Post) Create() error {
+func (p Post) CreatePost() error {
 	var err error
 
 	// Create directory structure
@@ -359,7 +359,7 @@ func (p Post) Create() error {
 	return nil
 }
 
-func (p Post) publish() error {
+func (p Post) publishPost() error {
 
 	imgDir := filepath.Join(p.dirPath, "img")
 	if _, err := os.Stat(imgDir); os.IsNotExist(err) {
@@ -393,14 +393,14 @@ func (p Post) publish() error {
 	return nil
 }
 
-func Publish(year int) error {
-	posts, err := scanDirectories(year)
+func PublishYearPosts(year int) error {
+	posts, err := scanPostDirectories(year)
 	if err != nil {
 		return fmt.Errorf("error scanning directories: %v", err)
 	}
 
 	for _, post := range posts {
-		err := post.publish()
+		err := post.publishPost()
 		if err != nil {
 			return fmt.Errorf("error publishing post: %v", err)
 		}
@@ -410,7 +410,7 @@ func Publish(year int) error {
 }
 
 // ScanDirectories scans the content/post directory and calls NewPost for each subdirectory
-func scanDirectories(year int) ([]Post, error) {
+func scanPostDirectories(year int) ([]Post, error) {
 	if year == 0 {
 		year = time.Now().Year()
 	}
@@ -435,7 +435,7 @@ func scanDirectories(year int) ([]Post, error) {
 			number, _ = strconv.Atoi(dayParts[1])
 		}
 
-		post, err := NewPost(dateStr, number)
+		post, err := CreateNewPost(dateStr, number)
 		if err != nil {
 			return err
 		}
