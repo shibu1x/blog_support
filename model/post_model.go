@@ -17,19 +17,19 @@ import (
 )
 
 func LoadEnv() {
-	PostDir = getEnv("POST_DIR", "")
-	AWSRegion = getEnv("AWS_REGION", "ap-northeast-1")
-	S3BucketName = getEnv("S3_BUCKET_NAME", "")
-	S3KeyPrefix = getEnv("S3_KEY_PREFIX", "")
-	RemoteImgBaseURL = getEnv("REMOTE_IMG_BASE_URL", "")
+	postDir = getEnv("POST_DIR", "")
+	awsRegion = getEnv("AWS_REGION", "ap-northeast-1")
+	s3BucketName = getEnv("S3_BUCKET_NAME", "")
+	s3KeyPrefix = getEnv("S3_KEY_PREFIX", "")
+	remoteImgBaseURL = getEnv("REMOTE_IMG_BASE_URL", "")
 }
 
 var (
-	PostDir          string
-	AWSRegion        string
-	S3BucketName     string
-	S3KeyPrefix      string
-	RemoteImgBaseURL string
+	postDir          string
+	awsRegion        string
+	s3BucketName     string
+	s3KeyPrefix      string
+	remoteImgBaseURL string
 )
 
 func getEnv(key, fallback string) string {
@@ -40,13 +40,13 @@ func getEnv(key, fallback string) string {
 }
 
 type Post struct {
-	Date    time.Time
-	Number  int
-	Dir     string
-	DirPath string
+	date    time.Time
+	number  int
+	dir     string
+	dirPath string
 }
 
-func NewPost(dateStr string, number int) (Post, error) {
+func CreateNewPost(dateStr string, number int) (Post, error) {
 	var date time.Time
 	var err error
 	date, err = dateparse.ParseAny(dateStr)
@@ -66,11 +66,11 @@ func NewPost(dateStr string, number int) (Post, error) {
 
 	dir := filepath.Join(fmt.Sprintf("%d", date.Year()), fmt.Sprintf("%02d", date.Month()), fmt.Sprintf("%02d%s", date.Day(), suffix))
 
-	return Post{Date: date, Number: number, Dir: dir, DirPath: filepath.Join(PostDir, dir)}, nil
+	return Post{date: date, number: number, dir: dir, dirPath: filepath.Join(postDir, dir)}, nil
 }
 
-func (p Post) CreateDirectory() error {
-	err := os.MkdirAll(p.DirPath, os.ModePerm)
+func (p Post) createDirectory() error {
+	err := os.MkdirAll(p.dirPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("error creating directory: %v", err)
 	}
@@ -78,7 +78,7 @@ func (p Post) CreateDirectory() error {
 	// Create additional directories
 	dirs := []string{"img", "img_src"}
 	for _, dir := range dirs {
-		dirPath := fmt.Sprintf("%s/%s", p.DirPath, dir)
+		dirPath := fmt.Sprintf("%s/%s", p.dirPath, dir)
 		err = os.MkdirAll(dirPath, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("error creating %s directory: %v", dir, err)
@@ -90,7 +90,7 @@ func (p Post) CreateDirectory() error {
 }
 
 func (p Post) createIndexFile() error {
-	indexFilePath := fmt.Sprintf("%s/index.md", p.DirPath)
+	indexFilePath := fmt.Sprintf("%s/index.md", p.dirPath)
 	if _, err := os.Stat(indexFilePath); os.IsNotExist(err) {
 		file, err := os.Create(indexFilePath)
 		if err != nil {
@@ -98,7 +98,7 @@ func (p Post) createIndexFile() error {
 		}
 		defer file.Close()
 
-		slug := p.Date.Format("20060102") + fmt.Sprintf("%d", p.Number)
+		slug := p.date.Format("20060102") + fmt.Sprintf("%d", p.number)
 
 		contentStr := fmt.Sprintf(`---
 title: 
@@ -112,7 +112,7 @@ tags:
 
 ## きっかけ
 
-`, slug, p.Date.Format("2006-01-02"))
+`, slug, p.date.Format("2006-01-02"))
 		_, err = file.WriteString(contentStr)
 		if err != nil {
 			return fmt.Errorf("error writing to index.md file: %v", err)
@@ -122,9 +122,9 @@ tags:
 	return nil
 }
 
-func (p Post) ResizeImages() error {
-	imgSrcDir := filepath.Join(p.DirPath, "img_src")
-	imgDir := filepath.Join(p.DirPath, "img")
+func (p Post) resizeImages() error {
+	imgSrcDir := filepath.Join(p.dirPath, "img_src")
+	imgDir := filepath.Join(p.dirPath, "img")
 
 	files, err := os.ReadDir(imgSrcDir)
 	if err != nil {
@@ -140,7 +140,7 @@ func (p Post) ResizeImages() error {
 		".png":  true,
 	}
 
-	var destNames []string
+	var imgFileNames []string
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -152,24 +152,24 @@ func (p Post) ResizeImages() error {
 			continue
 		}
 
-		destName := file.Name()
-		if strings.HasPrefix(destName, "IMG_") {
-			destName = strings.Replace(destName, "IMG_", "i", 1)
+		imgFileName := file.Name()
+		if strings.HasPrefix(imgFileName, "IMG_") {
+			imgFileName = strings.Replace(imgFileName, "IMG_", "i", 1)
 		}
 		if ext != ".png" {
-			destName = destName[:len(destName)-len(ext)] + ".jpg"
+			imgFileName = imgFileName[:len(imgFileName)-len(ext)] + ".jpg"
 		}
 
-		destName = strings.ToLower(destName)
+		imgFileName = strings.ToLower(imgFileName)
 		srcPath := filepath.Join(imgSrcDir, file.Name())
-		destPath := filepath.Join(imgDir, destName)
+		destPath := filepath.Join(imgDir, imgFileName)
 		cmd := exec.Command("convert", srcPath, "-resize", "1024x1024", destPath)
 		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("error resizing image: %v", err)
 		}
 
-		destNames = append(destNames, destName)
+		imgFileNames = append(imgFileNames, imgFileName)
 
 		err = os.Remove(srcPath)
 		if err != nil {
@@ -177,7 +177,7 @@ func (p Post) ResizeImages() error {
 		}
 	}
 
-	err = p.WriteDestNamesToIndex(destNames)
+	err = p.writeImageNamesToIndex(imgFileNames)
 	if err != nil {
 		return fmt.Errorf("error writing dest names to index.md: %v", err)
 	}
@@ -185,19 +185,19 @@ func (p Post) ResizeImages() error {
 	return nil
 }
 
-func (p Post) WriteDestNamesToIndex(destNames []string) error {
-	if len(destNames) == 0 {
+func (p Post) writeImageNamesToIndex(imgFileNames []string) error {
+	if len(imgFileNames) == 0 {
 		return nil
 	}
 
-	indexFilePath := filepath.Join(p.DirPath, "index.md")
+	indexFilePath := filepath.Join(p.dirPath, "index.md")
 	file, err := os.OpenFile(indexFilePath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return fmt.Errorf("error opening index.md file: %v", err)
 	}
 	defer file.Close()
 
-	for _, name := range destNames {
+	for _, name := range imgFileNames {
 		_, err := file.WriteString(fmt.Sprintf("![](img/%s)\n\n", name))
 
 		if err != nil {
@@ -208,9 +208,9 @@ func (p Post) WriteDestNamesToIndex(destNames []string) error {
 	return nil
 }
 
-func (p Post) RemoveUnusedImages() error {
-	imgDir := filepath.Join(p.DirPath, "img")
-	indexFilePath := filepath.Join(p.DirPath, "index.md")
+func (p Post) removeUnusedImages() error {
+	imgDir := filepath.Join(p.dirPath, "img")
+	indexFilePath := filepath.Join(p.dirPath, "index.md")
 
 	indexContent, err := os.ReadFile(indexFilePath)
 	if err != nil {
@@ -244,9 +244,9 @@ func (p Post) RemoveUnusedImages() error {
 	return nil
 }
 
-func (p Post) UploadImagesToS3() error {
+func (p Post) uploadImagesToS3() error {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(AWSRegion),
+		Region: aws.String(awsRegion),
 	})
 	if err != nil {
 		return fmt.Errorf("error creating AWS session: %v", err)
@@ -254,7 +254,7 @@ func (p Post) UploadImagesToS3() error {
 
 	svc := s3.New(sess)
 
-	imgDir := filepath.Join(p.DirPath, "img")
+	imgDir := filepath.Join(p.dirPath, "img")
 	files, err := os.ReadDir(imgDir)
 	if err != nil {
 		return fmt.Errorf("error reading img directory: %v", err)
@@ -273,8 +273,8 @@ func (p Post) UploadImagesToS3() error {
 		defer file.Close()
 
 		_, err = svc.PutObject(&s3.PutObjectInput{
-			Bucket: aws.String(S3BucketName),
-			Key:    aws.String(fmt.Sprintf("%s/%s/img/%s", S3KeyPrefix, p.Dir, filepath.Base(file.Name()))),
+			Bucket: aws.String(s3BucketName),
+			Key:    aws.String(fmt.Sprintf("%s/%s/img/%s", s3KeyPrefix, p.dir, filepath.Base(file.Name()))),
 			Body:   file,
 		})
 		if err != nil {
@@ -286,9 +286,9 @@ func (p Post) UploadImagesToS3() error {
 	return nil
 }
 
-func (p Post) RemoveImageDirectories() error {
-	imgDir := filepath.Join(p.DirPath, "img")
-	imgSrcDir := filepath.Join(p.DirPath, "img_src")
+func (p Post) removeImageDirectories() error {
+	imgDir := filepath.Join(p.dirPath, "img")
+	imgSrcDir := filepath.Join(p.dirPath, "img_src")
 
 	err := os.RemoveAll(imgDir)
 	if err != nil {
@@ -304,10 +304,10 @@ func (p Post) RemoveImageDirectories() error {
 	return nil
 }
 
-func (p Post) ReplaceImageLinks() error {
-	remoteImgDir := fmt.Sprintf("%s/%s/", RemoteImgBaseURL, p.Dir)
+func (p Post) replaceImageLinks() error {
+	remoteImgDir := fmt.Sprintf("%s/%s/", remoteImgBaseURL, p.dir)
 
-	indexFilePath := filepath.Join(p.DirPath, "index.md")
+	indexFilePath := filepath.Join(p.dirPath, "index.md")
 	indexContent, err := os.ReadFile(indexFilePath)
 	if err != nil {
 		return fmt.Errorf("error reading index.md file: %v", err)
@@ -316,8 +316,8 @@ func (p Post) ReplaceImageLinks() error {
 	re := regexp.MustCompile(`\]\((img/[^)]+)\)`)
 	replacedContent := re.ReplaceAllString(string(indexContent), fmt.Sprintf("](%s$1?d=300x300)", remoteImgDir))
 
-	coverJpgPath := filepath.Join(p.DirPath, "img", "cover.jpg")
-	coverPngPath := filepath.Join(p.DirPath, "img", "cover.png")
+	coverJpgPath := filepath.Join(p.dirPath, "img", "cover.jpg")
+	coverPngPath := filepath.Join(p.dirPath, "img", "cover.png")
 
 	if _, err := os.Stat(coverJpgPath); os.IsNotExist(err) {
 		if _, err := os.Stat(coverPngPath); err == nil {
@@ -341,11 +341,11 @@ func (p Post) ReplaceImageLinks() error {
 	return nil
 }
 
-func (p Post) Create() error {
+func (p Post) CreatePost() error {
 	var err error
 
 	// Create directory structure
-	if err := p.CreateDirectory(); err != nil {
+	if err := p.createDirectory(); err != nil {
 		return fmt.Errorf("error creating directory: %v", err)
 	}
 
@@ -353,39 +353,39 @@ func (p Post) Create() error {
 		return err
 	}
 
-	if err = p.ResizeImages(); err != nil {
+	if err = p.resizeImages(); err != nil {
 		return fmt.Errorf("error resizing images: %v", err)
 	}
 	return nil
 }
 
-func (p Post) Publish() error {
+func (p Post) publishPost() error {
 
-	imgDir := filepath.Join(p.DirPath, "img")
+	imgDir := filepath.Join(p.dirPath, "img")
 	if _, err := os.Stat(imgDir); os.IsNotExist(err) {
 		return nil
 	}
 
 	// Remove unused images
-	err := p.RemoveUnusedImages()
+	err := p.removeUnusedImages()
 	if err != nil {
 		return fmt.Errorf("error removing unused images: %v", err)
 	}
 
 	// Upload images to S3
-	err = p.UploadImagesToS3()
+	err = p.uploadImagesToS3()
 	if err != nil {
 		return fmt.Errorf("error uploading images to S3: %v", err)
 	}
 
 	// Replace image links
-	err = p.ReplaceImageLinks()
+	err = p.replaceImageLinks()
 	if err != nil {
 		return fmt.Errorf("error replacing image links: %v", err)
 	}
 
 	// Remove image directories
-	err = p.RemoveImageDirectories()
+	err = p.removeImageDirectories()
 	if err != nil {
 		return fmt.Errorf("error removing image directories: %v", err)
 	}
@@ -393,14 +393,14 @@ func (p Post) Publish() error {
 	return nil
 }
 
-func Publish(year int) error {
-	posts, err := ScanDirectories(year)
+func PublishYearPosts(year int) error {
+	posts, err := scanPostDirectories(year)
 	if err != nil {
 		return fmt.Errorf("error scanning directories: %v", err)
 	}
 
 	for _, post := range posts {
-		err := post.Publish()
+		err := post.publishPost()
 		if err != nil {
 			return fmt.Errorf("error publishing post: %v", err)
 		}
@@ -410,13 +410,13 @@ func Publish(year int) error {
 }
 
 // ScanDirectories scans the content/post directory and calls NewPost for each subdirectory
-func ScanDirectories(year int) ([]Post, error) {
+func scanPostDirectories(year int) ([]Post, error) {
 	if year == 0 {
 		year = time.Now().Year()
 	}
 
 	var posts []Post
-	err := filepath.Walk(filepath.Join(PostDir, fmt.Sprintf("%d", year)), func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(filepath.Join(postDir, fmt.Sprintf("%d", year)), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -424,7 +424,7 @@ func ScanDirectories(year int) ([]Post, error) {
 			return nil
 		}
 
-		path = strings.Replace(path, PostDir+"/", "", 1)
+		path = strings.Replace(path, postDir+"/", "", 1)
 
 		dirParts := strings.Split(path, string(os.PathSeparator))
 		dateStr := fmt.Sprintf("%s-%s-%s", dirParts[0], dirParts[1], dirParts[2])
@@ -435,7 +435,7 @@ func ScanDirectories(year int) ([]Post, error) {
 			number, _ = strconv.Atoi(dayParts[1])
 		}
 
-		post, err := NewPost(dateStr, number)
+		post, err := CreateNewPost(dateStr, number)
 		if err != nil {
 			return err
 		}
