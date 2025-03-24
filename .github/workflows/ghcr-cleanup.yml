@@ -1,12 +1,12 @@
 name: Clean up Untagged Images
 
 on:
-  schedule:
-    - cron: '0 20 * * *'
   workflow_dispatch:
+  # schedule:
+  #   - cron: '0 20 * * *'
 
 jobs:
-  cleanup-images:
+  cleanup:
     runs-on: ubuntu-latest
     permissions:
       packages: write
