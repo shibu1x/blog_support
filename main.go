@@ -2,9 +2,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
+	"time"
 
+	"github.com/araddon/dateparse"
 	"github.com/joho/godotenv"
 	"github.com/shibu1x/blog_support/model"
 )
@@ -28,11 +29,11 @@ func main() {
 		return
 	}
 
-	post, err := model.CreateNewPost(*dateStr, *number)
+	date, err := dateparse.ParseAny(*dateStr)
 	if err != nil {
-		fmt.Printf("Error creating PostModel: %v\n", err)
-		return
+		date = time.Now()
 	}
 
+	post := model.CreateNewPost(date, *number)
 	post.CreatePost()
 }
