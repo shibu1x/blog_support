@@ -2,7 +2,8 @@ version: '3'
 
 env:
   NAME: blog_support
-  REGISTRY: cr.quud.net
+
+dotenv: ['.env']
 
 tasks:
   build_dev:
@@ -11,7 +12,7 @@ tasks:
         docker buildx build \
           --file Dockerfile.dev \
           --platform linux/arm64 \
-          --build-arg arch=arm64 --build-arg proxy=1 \
+          --build-arg arch=arm64 --build-arg apt_cacher=${APT_CACHER} \
           --push -t ${REGISTRY}/${NAME}_dev:latest .
     silent: true
   build:
@@ -20,6 +21,6 @@ tasks:
         docker buildx build \
           --file Dockerfile \
           --platform linux/arm64 \
-          --build-arg arch=arm64 --build-arg proxy=1 \
+          --build-arg arch=arm64 \
           --push -t ${REGISTRY}/${NAME}:latest .
     silent: true
