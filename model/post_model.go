@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/araddon/dateparse"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -46,14 +45,7 @@ type Post struct {
 	dirPath string
 }
 
-func CreateNewPost(dateStr string, number int) (Post, error) {
-	var date time.Time
-	var err error
-	date, err = dateparse.ParseAny(dateStr)
-	if err != nil {
-		date = time.Now()
-	}
-
+func CreateNewPost(date time.Time, number int) Post {
 	if date.Year() == 0 {
 		currentYear := time.Now().Year()
 		date = date.AddDate(currentYear, 0, 0)
@@ -66,7 +58,7 @@ func CreateNewPost(dateStr string, number int) (Post, error) {
 
 	dir := filepath.Join(fmt.Sprintf("%d", date.Year()), fmt.Sprintf("%02d", date.Month()), fmt.Sprintf("%02d%s", date.Day(), suffix))
 
-	return Post{date: date, number: number, dir: dir, dirPath: filepath.Join(postDir, dir)}, nil
+	return Post{date: date, number: number, dir: dir, dirPath: filepath.Join(postDir, dir)}
 }
 
 func (p Post) createDirectory() error {
@@ -427,18 +419,20 @@ func scanPostDirectories(year int) ([]Post, error) {
 		path = strings.Replace(path, postDir+"/", "", 1)
 
 		dirParts := strings.Split(path, string(os.PathSeparator))
-		dateStr := fmt.Sprintf("%s-%s-%s", dirParts[0], dirParts[1], dirParts[2])
+		year, _ := strconv.Atoi(dirParts[0])
+		month, _ := strconv.Atoi(dirParts[1])
+		day, _ := strconv.Atoi(dirParts[2])
+		date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 		number := 0
 		if strings.Contains(dirParts[2], "_") {
 			dayParts := strings.Split(dirParts[2], "_")
-			dateStr = fmt.Sprintf("%s-%s-%s", dirParts[0], dirParts[1], dayParts[0])
+			day, _ := strconv.Atoi(dayParts[0])
+			date = time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
 			number, _ = strconv.Atoi(dayParts[1])
 		}
 
-		post, err := CreateNewPost(dateStr, number)
-		if err != nil {
-			return err
-		}
+		post := CreateNewPost(date, number)
+
 		posts = append(posts, post)
 
 		return nil
