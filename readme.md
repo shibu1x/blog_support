@@ -1,9 +1,19 @@
 # Blog Support Project
 
-This project is an application that supports posting blogs created with hugo
+A Go-based application that provides support functionality for Hugo-generated blogs.
 
-It is built using Go and Docker.
+## Features
+
+- Built with Go
+- Containerized with Docker
+- Supports Hugo blog posts
+
+## Prerequisites
+
+- Go 1.x or higher
+- Docker
+- Hugo (for blog generation)
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
