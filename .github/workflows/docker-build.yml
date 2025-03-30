@@ -2,9 +2,13 @@ name: Docker Build
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'go.*'
+      - '**/*.go'
 
 jobs:
   build:
@@ -40,3 +44,16 @@ jobs:
           platforms: linux/${{ matrix.platform }}
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
+
+  cleanup:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Clean up GHCR images
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          delete-untagged: true
+        env:
+          GHCR_TOKEN: ${{ secrets.GHCR_PAT }}
