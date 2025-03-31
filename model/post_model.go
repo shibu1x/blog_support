@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 const (
@@ -271,14 +271,14 @@ func (p Post) removeUnusedImages() error {
 
 // uploadImagesToS3 uploads image files to AWS S3.
 func (p Post) uploadImagesToS3() error {
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.AwsRegion),
-	})
+	ctx := context.Background()
+	cfg, err := awsconfig.LoadDefaultConfig(ctx,
+		awsconfig.WithRegion(config.AwsRegion))
 	if err != nil {
-		return fmt.Errorf("failed to create AWS session: %w", err)
+		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
-	svc := s3.New(sess)
+	client := s3.NewFromConfig(cfg)
 	imgDir := filepath.Join(p.dirPath, imgDirName)
 
 	files, err := os.ReadDir(imgDir)
@@ -299,9 +299,9 @@ func (p Post) uploadImagesToS3() error {
 		defer f.Close()
 
 		s3Key := fmt.Sprintf("%s/%s/img/%s", config.S3KeyPrefix, p.dir, filepath.Base(filePath))
-		_, err = svc.PutObject(&s3.PutObjectInput{
-			Bucket: aws.String(config.S3BucketName),
-			Key:    aws.String(s3Key),
+		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: &config.S3BucketName,
+			Key:    &s3Key,
 			Body:   f,
 		})
 		if err != nil {
