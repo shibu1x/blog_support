@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -11,9 +10,7 @@ import (
 )
 
 func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: Error loading .env file: %v", err)
-	}
+	_ = godotenv.Load()
 	model.LoadEnv()
 }
 
