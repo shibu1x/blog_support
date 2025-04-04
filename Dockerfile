@@ -20,7 +20,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 FROM alpine:latest
 
 # Install ImageMagick
-RUN apk add --no-cache imagemagick
+RUN apk add --no-cache imagemagick tzdata
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
