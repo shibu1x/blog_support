@@ -17,10 +17,14 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # Use a minimal base image for the final stage
-FROM alpine:latest
+FROM debian:stable-slim
 
-# Install ImageMagick
-RUN apk add --no-cache imagemagick
+# Install ImageMagick, AWS CLI dependencies and CA certificates
+RUN apt-get update && \
+    apt-get install -y \
+    imagemagick \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
