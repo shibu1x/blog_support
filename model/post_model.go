@@ -422,12 +422,14 @@ func (p Post) publishPost() error {
 func PublishYearPosts(year int) error {
 	posts, err := scanPostDirectories(year)
 	if err != nil {
+		fmt.Printf("Error scanning directories: %v\n", err)
 		return fmt.Errorf("error scanning directories: %v", err)
 	}
 
 	for _, post := range posts {
 		err := post.publishPost()
 		if err != nil {
+			fmt.Printf("Error publishing post %s: %v\n", post.dir, err)
 			return fmt.Errorf("error publishing post: %v", err)
 		}
 	}
