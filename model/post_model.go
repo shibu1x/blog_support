@@ -186,7 +186,7 @@ func (p Post) resizeImages() error {
 		imgFileName = strings.ToLower(imgFileName)
 		srcPath := filepath.Join(imgSrcDir, file.Name())
 		destPath := filepath.Join(imgDir, imgFileName)
-		cmd := exec.Command("convert", srcPath, "-resize", imageResizeSize, destPath)
+		cmd := exec.Command("magick", srcPath, "-resize", imageResizeSize, destPath)
 		err := cmd.Run()
 		if err != nil {
 			return fmt.Errorf("error resizing image: %v", err)
