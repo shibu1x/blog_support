@@ -12,7 +12,7 @@ tasks:
         docker buildx build \
           --file Dockerfile.dev \
           --platform linux/arm64 \
-          --build-arg arch=arm64 --build-arg apt_cacher=${APT_CACHER} \
+          --build-arg apt_cacher=${APT_CACHER} \
           --push -t ${REGISTRY}/${NAME}_dev:latest .
     silent: true
   build:
@@ -21,6 +21,5 @@ tasks:
         docker buildx build \
           --file Dockerfile \
           --platform linux/arm64 \
-          --build-arg arch=arm64 \
           --push -t ${REGISTRY}/${NAME}:latest .
     silent: true
