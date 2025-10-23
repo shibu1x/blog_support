@@ -1,9 +1,17 @@
 FROM golang:latest
 
+# Set environment variables for non-interactive installations
+ENV DEBIAN_FRONTEND=noninteractive
+
 WORKDIR /app
 
 ARG apt_cacher
-RUN if [[ -z "$apt_cacher" ]] ; then echo "Acquire::http { Proxy \"$apt_cacher\"; };" >> /etc/apt/apt.conf.d/01proxy ; fi
+RUN if [ -n "$apt_cacher" ] ; then \
+    echo "Acquire::http { Proxy \"http://${apt_cacher}:3142\"; };" >> /etc/apt/apt.conf.d/01proxy ; \
+    fi
 
-RUN apt update \
-    && apt install -y imagemagick
+# Update package list and install necessary dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        imagemagick \
+    && rm -rf /var/lib/apt/lists/*

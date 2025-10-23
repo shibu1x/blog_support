@@ -6,20 +6,29 @@ env:
 dotenv: ['.env']
 
 tasks:
-  build_dev:
-    cmds:
-      - | 
-        docker buildx build \
-          --file Dockerfile.dev \
-          --platform linux/arm64 \
-          --build-arg apt_cacher=${APT_CACHER} \
-          --push -t ${REGISTRY}/${NAME}_dev:latest .
-    silent: true
   build:
     cmds:
+      - task: arm
+        vars:
+          VERSION: latest
+  amd:
+    internal: true
+    cmds:
       - | 
         docker buildx build \
-          --file Dockerfile \
+          --builder ${AMD64_BUILDER} \
+          --platform linux/amd64 \
+          --build-arg apt_cacher=${APT_CACHER} \
+          --push -t ${REGISTRY}/${NAME}:{{.VERSION}} .
+      - ssh ${REMOTE_HOST} "docker pull ${REGISTRY}/${NAME}:{{.VERSION}}"
+    silent: true
+
+  arm:
+    internal: true
+    cmds:
+      - | 
+        docker buildx build \
           --platform linux/arm64 \
+          --build-arg apt_cacher=${APT_CACHER} \
           --push -t ${REGISTRY}/${NAME}:latest .
     silent: true
