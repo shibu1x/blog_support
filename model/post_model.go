@@ -186,10 +186,24 @@ func (p Post) resizeImages() error {
 		imgFileName = strings.ToLower(imgFileName)
 		srcPath := filepath.Join(imgSrcDir, file.Name())
 		destPath := filepath.Join(imgDir, imgFileName)
+
+		// Get source file timestamps before resizing
+		srcInfo, err := os.Stat(srcPath)
+		if err != nil {
+			return fmt.Errorf("error getting source file info: %v", err)
+		}
+		modTime := srcInfo.ModTime()
+
 		cmd := exec.Command("magick", srcPath, "-resize", imageResizeSize, destPath)
-		err := cmd.Run()
+		err = cmd.Run()
 		if err != nil {
 			return fmt.Errorf("error resizing image: %v", err)
+		}
+
+		// Preserve timestamps on the resized image
+		err = os.Chtimes(destPath, modTime, modTime)
+		if err != nil {
+			return fmt.Errorf("error setting timestamps on resized image: %v", err)
 		}
 
 		imgFileNames = append(imgFileNames, imgFileName)
@@ -292,6 +306,13 @@ func (p Post) uploadImagesToS3() error {
 		}
 
 		filePath := filepath.Join(imgDir, file.Name())
+
+		// Get file info to preserve timestamps
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to get file info for %s: %w", filePath, err)
+		}
+
 		f, err := os.Open(filePath)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s: %w", filePath, err)
@@ -299,10 +320,17 @@ func (p Post) uploadImagesToS3() error {
 		defer f.Close()
 
 		s3Key := fmt.Sprintf("%s/%s/img/%s", config.S3KeyPrefix, p.dir, filepath.Base(filePath))
+
+		// Store original modification time in metadata
+		metadata := map[string]string{
+			"original-mtime": fileInfo.ModTime().Format(time.RFC3339),
+		}
+
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: &config.S3BucketName,
-			Key:    &s3Key,
-			Body:   f,
+			Bucket:   &config.S3BucketName,
+			Key:      &s3Key,
+			Body:     f,
+			Metadata: metadata,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to upload file %s to S3: %w", filePath, err)
