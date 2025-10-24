@@ -67,8 +67,8 @@ go run main.go -p -y 2025
 # Build Docker image (uses Task/Taskfile)
 task build
 
-# Build dev image
-task build_dev
+# Build dev image (requires env vars: AMD64_BUILDER, APT_CACHER, REGISTRY)
+task amd
 
 # Run with Docker Compose
 docker compose up
