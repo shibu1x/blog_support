@@ -65,25 +65,25 @@ go run main.go
 
 Create a post for a specific date:
 ```bash
-go run main.go -d 10/23
-go run main.go -d 2025/10/23
+go run main.go 10/23
+go run main.go 2025/10/23
 ```
 
 Create a second post on the same day:
 ```bash
-go run main.go -d 10/23 -n 2
+go run main.go -N 2 10/23
 ```
 
 ### Publish Posts
 
 Publish all posts for the current year:
 ```bash
-go run main.go -p
+go run main.go -P
 ```
 
 Publish posts for a specific year:
 ```bash
-go run main.go -p -y 2025
+go run main.go -P 2025
 ```
 
 ## Workflow
