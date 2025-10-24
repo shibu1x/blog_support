@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strconv"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -15,18 +16,29 @@ func init() {
 }
 
 func main() {
-	dateStr := flag.String("d", "", "Date in format MM/DD or YYYY/MM/DD")
-	number := flag.Int("n", 0, "Number")
-	publish := flag.Bool("p", false, "Publish")
-	year := flag.Int("y", 0, "Year in format YYYY")
+	number := flag.Int("N", 0, "Number")
+	publish := flag.Bool("P", false, "Publish")
 	flag.Parse()
 
 	if *publish {
-		model.PublishYearPosts(*year)
+		// Get year from positional argument for publish mode
+		var year int
+		args := flag.Args()
+		if len(args) > 0 {
+			year, _ = strconv.Atoi(args[0])
+		}
+		model.PublishYearPosts(year)
 		return
 	}
 
-	date, err := dateparse.ParseAny(*dateStr)
+	// Get date from positional argument for post creation
+	var dateStr string
+	args := flag.Args()
+	if len(args) > 0 {
+		dateStr = args[0]
+	}
+
+	date, err := dateparse.ParseAny(dateStr)
 	if err != nil {
 		date = time.Now()
 	}

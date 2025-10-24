@@ -9,9 +9,9 @@ This is a Go-based command-line tool for managing Hugo blog posts. It automates 
 ## Core Architecture
 
 ### Entry Point (main.go)
-- CLI accepts three modes:
-  - Create new post: `./main -d <date> -n <number>` (date format MM/DD or YYYY/MM/DD)
-  - Publish posts: `./main -p -y <year>` (publishes all posts for a year)
+- CLI accepts two modes:
+  - Create new post: `./main [date] [-N <number>]` (date format MM/DD or YYYY/MM/DD as positional argument)
+  - Publish posts: `./main -P [year]` (publishes all posts for a year, defaults to current year)
   - Default: creates post for current date if no date specified
 
 ### Post Model (model/post_model.go)
@@ -48,31 +48,32 @@ Required environment variables (loaded from .env via godotenv):
 # Create post for today
 go run main.go
 
-# Create post for specific date
-go run main.go -d 10/23
-go run main.go -d 2025/10/23
+# Create post for specific date (positional argument)
+go run main.go 10/23
+go run main.go 2025/10/23
 
 # Create second post for same day
-go run main.go -d 10/23 -n 2
+go run main.go -N 2 10/23
 
 # Publish all posts for current year
-go run main.go -p
+go run main.go -P
 
 # Publish posts for specific year
-go run main.go -p -y 2025
+go run main.go -P 2025
 ```
 
 ### Build & Deploy
 ```bash
-# Build Docker image (uses Task/Taskfile)
+# Build Docker image for ARM64 (uses Task/Taskfile)
 task build
-
-# Build dev image (requires env vars: AMD64_BUILDER, APT_CACHER, REGISTRY)
-task amd
 
 # Run with Docker Compose
 docker compose up
 ```
+
+Note: The Taskfile supports multi-platform builds:
+- `task build` - Builds ARM64 image and pushes to registry
+- `task amd` - Builds AMD64 image (requires env vars: AMD64_BUILDER, APT_CACHER, REGISTRY, REMOTE_HOST)
 
 ### Testing
 No test files exist in the codebase.

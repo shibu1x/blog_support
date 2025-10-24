@@ -28,5 +28,9 @@ WORKDIR /app
 # Copy the executable from the build stage
 COPY --from=builder /app/main .
 
-# Command to run the executable
-CMD ["./main"]
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["./entrypoint.sh"]
