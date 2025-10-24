@@ -46,9 +46,9 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
-      - name: Delete untagged images from GitHub Container Registry
-        uses: actions/delete-package-versions@v5
-        with:
-          package-name: ${{ github.event.repository.name }}
-          package-type: 'container'
-          min-versions-to-keep: 2
+      # - name: Delete untagged images from GitHub Container Registry
+      #   uses: actions/delete-package-versions@v5
+      #   with:
+      #     package-name: ${{ github.event.repository.name }}
+      #     package-type: 'container'
+      #     min-versions-to-keep: 4
